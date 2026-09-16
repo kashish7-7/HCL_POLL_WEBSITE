@@ -1,0 +1,16 @@
+# Dependencies & System
+node_modules/
+.DS_Store
+*.log
+dist/
+build/
+bin/
+.env
+
+# Go binaries
+backend/bin/
+backend/*.exe
+
+# IDE & Editors
+.vscode/
+.idea/
