@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -36,6 +37,20 @@ func NewPollRepository(mongoInst *database.MongoInstance, redisInst *database.Re
 	}
 }
 
+func CalculatePollStatus(poll *models.Poll) string {
+	if !poll.IsActive {
+		return "closed"
+	}
+	now := time.Now()
+	if poll.StartAt != nil && now.Before(*poll.StartAt) {
+		return "scheduled"
+	}
+	if poll.EndAt != nil && !now.Before(*poll.EndAt) {
+		return "closed"
+	}
+	return "active"
+}
+
 func (r *PollRepository) CreatePoll(ctx context.Context, input models.CreatePollInput, ownerID primitive.ObjectID, ownerName string) (*models.Poll, error) {
 	pollsColl := r.db.Collection("polls")
 
@@ -59,6 +74,8 @@ func (r *PollRepository) CreatePoll(ctx context.Context, input models.CreatePoll
 		Question:  input.Question,
 		Options:   opts,
 		IsActive:  true,
+		StartAt:   input.StartAt,
+		EndAt:     input.EndAt,
 		CreatedAt: time.Now(),
 	}
 
@@ -105,6 +122,9 @@ func (r *PollRepository) GetPollResults(ctx context.Context, pollIDStr string) (
 		return nil, err
 	}
 
+	status := CalculatePollStatus(poll)
+	isActive := poll.IsActive && status == "active"
+
 	countsMap := make(map[string]int64)
 	var totalVotes int64 = 0
 
@@ -140,7 +160,10 @@ func (r *PollRepository) GetPollResults(ctx context.Context, pollIDStr string) (
 	return &models.PollResultPayload{
 		PollID:     pollIDStr,
 		Question:   poll.Question,
-		IsActive:   poll.IsActive,
+		IsActive:   isActive,
+		Status:     status,
+		StartAt:    poll.StartAt,
+		EndAt:      poll.EndAt,
 		TotalVotes: totalVotes,
 		Counts:     countsMap,
 		Options:    optionResults,
@@ -158,7 +181,11 @@ func (r *PollRepository) CastVote(ctx context.Context, pollIDStr string, optionI
 		return nil, err
 	}
 
-	if !poll.IsActive {
+	status := CalculatePollStatus(poll)
+	if status == "scheduled" {
+		return nil, errors.New("this poll has not started yet")
+	}
+	if status == "closed" {
 		return nil, errors.New("this poll is closed and no longer accepting votes")
 	}
 
@@ -180,6 +207,8 @@ func (r *PollRepository) CastVote(ctx context.Context, pollIDStr string, optionI
 	hasher.Write([]byte(voterHashRaw))
 	voterHash := hex.EncodeToString(hasher.Sum(nil))
 
+	log.Printf("[REALTIME][VOTE] poll=%s option=%s voter=%s", pollIDStr, optionID, voterUUID)
+
 	// 1. Redis Set Deduplication check
 	if r.redis != nil {
 		voterSetKey := fmt.Sprintf("poll:%s:voters", pollIDStr)
@@ -195,7 +224,10 @@ func (r *PollRepository) CastVote(ctx context.Context, pollIDStr string, optionI
 
 	redisKey := fmt.Sprintf("poll:%s:counts", pollIDStr)
 	if r.redis != nil {
-		_, _ = r.redis.HIncrBy(ctx, redisKey, optionID, 1).Result()
+		newCount, err := r.redis.HIncrBy(ctx, redisKey, optionID, 1).Result()
+		if err == nil {
+			log.Printf("[REALTIME][REDIS] HINCRBY successful poll=%s option=%s new_count=%d", pollIDStr, optionID, newCount)
+		}
 		allCounts, err := r.redis.HGetAll(ctx, redisKey).Result()
 		if err == nil {
 			for k, v := range allCounts {
@@ -222,7 +254,12 @@ func (r *PollRepository) CastVote(ctx context.Context, pollIDStr string, optionI
 	if r.redis != nil {
 		payloadBytes, _ := json.Marshal(broadcast)
 		channel := fmt.Sprintf("poll:%s:updates", pollIDStr)
-		_ = r.redis.Publish(ctx, channel, payloadBytes).Err()
+		err := r.redis.Publish(ctx, channel, payloadBytes).Err()
+		if err != nil {
+			log.Printf("[REALTIME][REDIS] PUBLISH failed channel=%s err=%v", channel, err)
+		} else {
+			log.Printf("[REALTIME][REDIS] PUBLISH successful channel=%s total_votes=%d", channel, totalVotes)
+		}
 	}
 
 	// 4. Async MongoDB persistent audit write
@@ -231,7 +268,7 @@ func (r *PollRepository) CastVote(ctx context.Context, pollIDStr string, optionI
 		defer cancel()
 
 		votesColl := r.db.Collection("votes")
-		_, _ = votesColl.InsertOne(bgCtx, models.Vote{
+		_, err := votesColl.InsertOne(bgCtx, models.Vote{
 			ID:              primitive.NewObjectID(),
 			PollID:          pollID,
 			OptionID:        optionID,
@@ -239,6 +276,9 @@ func (r *PollRepository) CastVote(ctx context.Context, pollIDStr string, optionI
 			IPAddress:       ipAddress,
 			CreatedAt:       time.Now(),
 		})
+		if err == nil {
+			log.Printf("[REALTIME][MONGO] vote persisted poll=%s option=%s", pollIDStr, optionID)
+		}
 	}()
 
 	return &broadcast, nil

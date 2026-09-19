@@ -1,9 +1,17 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 
+	"backend/internal/export"
 	"backend/internal/models"
+	"backend/internal/realtime"
 	"backend/internal/repository"
 
 	"github.com/gin-gonic/gin"
@@ -11,11 +19,15 @@ import (
 )
 
 type PollHandler struct {
-	repo *repository.PollRepository
+	repo  *repository.PollRepository
+	wsHub *realtime.Hub
 }
 
-func NewPollHandler(repo *repository.PollRepository) *PollHandler {
-	return &PollHandler{repo: repo}
+func NewPollHandler(repo *repository.PollRepository, wsHub *realtime.Hub) *PollHandler {
+	return &PollHandler{
+		repo:  repo,
+		wsHub: wsHub,
+	}
 }
 
 func (h *PollHandler) CreatePoll(c *gin.Context) {
@@ -23,6 +35,14 @@ func (h *PollHandler) CreatePoll(c *gin.Context) {
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Validate schedule bounds if provided
+	if input.StartAt != nil && input.EndAt != nil {
+		if !input.EndAt.After(*input.StartAt) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "End time must be after start time"})
+			return
+		}
 	}
 
 	userIDVal, exists := c.Get("userID")
@@ -71,6 +91,37 @@ func (h *PollHandler) GetPollResults(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"results": results})
 }
 
+func (h *PollHandler) GetOwnerPollResults(c *gin.Context) {
+	pollID := c.Param("id")
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	ownerID := userIDVal.(primitive.ObjectID)
+
+	// Fetch poll metadata to check ownership
+	poll, err := h.repo.GetPollByID(c.Request.Context(), pollID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Poll not found"})
+		return
+	}
+
+	if poll.OwnerID != ownerID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: You are not the owner of this poll"})
+		return
+	}
+
+	results, err := h.repo.GetPollResults(c.Request.Context(), pollID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"results": results})
+}
+
 func (h *PollHandler) VotePoll(c *gin.Context) {
 	pollID := c.Param("id")
 
@@ -88,10 +139,104 @@ func (h *PollHandler) VotePoll(c *gin.Context) {
 		return
 	}
 
+	log.Printf("[REALTIME] Vote registered for poll %s, option %s", pollID, input.OptionID)
+	if h.wsHub != nil && broadcast != nil {
+		if payloadBytes, err := json.Marshal(broadcast); err == nil {
+			h.wsHub.Broadcast(pollID, payloadBytes)
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Vote submitted successfully",
 		"payload": broadcast,
 	})
+}
+
+func (h *PollHandler) ExportCSV(c *gin.Context) {
+	pollID := c.Param("id")
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	ownerID := userIDVal.(primitive.ObjectID)
+
+	poll, err := h.repo.GetPollByID(c.Request.Context(), pollID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Poll not found"})
+		return
+	}
+
+	if poll.OwnerID != ownerID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: You are not the owner of this poll"})
+		return
+	}
+
+	results, err := h.repo.GetPollResults(c.Request.Context(), pollID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=pollnow-results-%s.csv", pollID))
+
+	buf := new(bytes.Buffer)
+	writer := csv.NewWriter(buf)
+
+	_ = writer.Write([]string{"Poll Question", "Option ID", "Option Text", "Votes", "Percentage (%)"})
+	for _, opt := range results.Options {
+		_ = writer.Write([]string{
+			results.Question,
+			opt.ID,
+			opt.Text,
+			strconv.FormatInt(opt.Votes, 10),
+			fmt.Sprintf("%.2f", opt.Percentage),
+		})
+	}
+	_ = writer.Write([]string{results.Question, "SUMMARY", "Total Votes Recorded", strconv.FormatInt(results.TotalVotes, 10), "100.00"})
+	writer.Flush()
+
+	c.String(http.StatusOK, buf.String())
+}
+
+func (h *PollHandler) ExportExcel(c *gin.Context) {
+	pollID := c.Param("id")
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	ownerID := userIDVal.(primitive.ObjectID)
+
+	poll, err := h.repo.GetPollByID(c.Request.Context(), pollID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Poll not found"})
+		return
+	}
+
+	if poll.OwnerID != ownerID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: You are not the owner of this poll"})
+		return
+	}
+
+	results, err := h.repo.GetPollResults(c.Request.Context(), pollID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	xlsxData, err := export.GenerateExcel(results.Question, results.Options, results.TotalVotes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate Excel file: " + err.Error()})
+		return
+	}
+
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=pollnow-results-%s.xlsx", pollID))
+	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsxData)
 }
 
 func (h *PollHandler) ClosePoll(c *gin.Context) {

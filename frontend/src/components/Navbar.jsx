@@ -1,23 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BarChart3, PlusCircle, LayoutDashboard, LogIn, LogOut, Menu, X, User } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, LogIn, LogOut, Menu, X } from 'lucide-react';
 
 export const Navbar = ({ currentTab, setTab }) => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNav = (tab) => {
     setTab(tab);
     setMobileMenuOpen(false);
-  };
-
-  const scrollToHowItWorks = () => {
-    setMobileMenuOpen(false);
-    setTab('home');
-    setTimeout(() => {
-      const el = document.getElementById('how-it-works');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
   };
 
   return (
@@ -28,11 +19,9 @@ export const Navbar = ({ currentTab, setTab }) => {
           onClick={() => handleNav('home')}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-200 group-hover:bg-indigo-700 transition">
-            <BarChart3 className="w-5 h-5" />
-          </div>
+          <img src="/logo.svg" alt="PollNow Logo" className="w-9 h-9 rounded-xl shadow-xs group-hover:scale-105 transition-transform" />
           <span className="font-extrabold text-xl tracking-tight text-slate-900">
-            Pulse<span className="text-indigo-600">Vote</span>
+            Poll<span className="text-indigo-600">Now</span>
           </span>
         </div>
 
@@ -45,8 +34,8 @@ export const Navbar = ({ currentTab, setTab }) => {
             Home
           </button>
           <button
-            onClick={scrollToHowItWorks}
-            className="hover:text-indigo-600 transition cursor-pointer"
+            onClick={() => handleNav('how-it-works')}
+            className={`hover:text-indigo-600 transition cursor-pointer ${currentTab === 'how-it-works' ? 'text-indigo-600 font-semibold' : ''}`}
           >
             How It Works
           </button>
@@ -116,7 +105,7 @@ export const Navbar = ({ currentTab, setTab }) => {
             Home
           </button>
           <button
-            onClick={scrollToHowItWorks}
+            onClick={() => handleNav('how-it-works')}
             className="block w-full text-left py-2 hover:text-indigo-600"
           >
             How It Works

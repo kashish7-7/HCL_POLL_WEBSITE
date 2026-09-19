@@ -8,7 +8,6 @@ import (
 
 	"backend/internal/database"
 	"backend/internal/models"
-	"backend/internal/services"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -84,7 +83,7 @@ func (r *AuthRepository) AuthenticateEmail(ctx context.Context, input models.Log
 	}
 
 	if user.PasswordHash == "" {
-		return nil, errors.New("this account was created using Google Sign-In. Please sign in with Google.")
+		return nil, errors.New("invalid email address or password")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
@@ -92,43 +91,6 @@ func (r *AuthRepository) AuthenticateEmail(ctx context.Context, input models.Log
 	}
 
 	return &user, nil
-}
-
-func (r *AuthRepository) UpsertGoogleUser(ctx context.Context, gInfo *services.GoogleTokenInfo) (*models.User, error) {
-	usersColl := r.db.Collection("users")
-
-	var user models.User
-	err := usersColl.FindOne(ctx, bson.M{"email": gInfo.Email}).Decode(&user)
-	if err == nil {
-		// User exists, update google_id if missing
-		if user.GoogleID == "" {
-			_, _ = usersColl.UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{"$set": bson.M{"google_id": gInfo.Sub}})
-			user.GoogleID = gInfo.Sub
-		}
-		return &user, nil
-	}
-
-	// Create new user from Google profile
-	username := gInfo.Name
-	if username == "" {
-		username = gInfo.Email
-	}
-
-	newUser := models.User{
-		ID:           primitive.NewObjectID(),
-		Email:        gInfo.Email,
-		GoogleID:     gInfo.Sub,
-		Username:     username,
-		AuthProvider: "google",
-		CreatedAt:    time.Now(),
-	}
-
-	_, err = usersColl.InsertOne(ctx, newUser)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Google user: %w", err)
-	}
-
-	return &newUser, nil
 }
 
 func (r *AuthRepository) GetUserByID(ctx context.Context, id primitive.ObjectID) (*models.User, error) {

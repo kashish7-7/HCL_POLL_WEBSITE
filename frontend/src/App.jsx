@@ -8,18 +8,62 @@ import { Register } from './pages/Register';
 import { CreatePoll } from './pages/CreatePoll';
 import { Dashboard } from './pages/Dashboard';
 import { Poll } from './pages/Poll';
+import { HowItWorksPage } from './pages/HowItWorksPage';
 
-function PulseVoteApp() {
+function PollNowApp() {
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedPollId, setSelectedPollId] = useState(null);
+  const [isCreatorView, setIsCreatorView] = useState(false);
 
   useEffect(() => {
-    // Check path for /poll/:id or query parameter ?poll=id
+    // Update document title per tab
+    switch (currentTab) {
+      case 'home':
+        document.title = 'PollNow - Real-Time Audience Polling';
+        break;
+      case 'how-it-works':
+        document.title = 'How It Works | PollNow';
+        break;
+      case 'login':
+        document.title = 'Login | PollNow';
+        break;
+      case 'register':
+        document.title = 'Register | PollNow';
+        break;
+      case 'dashboard':
+        document.title = 'Dashboard | PollNow';
+        break;
+      case 'create':
+        document.title = 'Create Poll | PollNow';
+        break;
+      case 'poll':
+        document.title = selectedPollId ? (isCreatorView ? `Results #${selectedPollId} | PollNow` : `Poll #${selectedPollId} | PollNow`) : 'Poll | PollNow';
+        break;
+      default:
+        document.title = 'PollNow - Real-Time Audience Polling';
+    }
+  }, [currentTab, selectedPollId, isCreatorView]);
+
+  useEffect(() => {
+    // Check path for /dashboard/poll/:id or /poll/:id or /how-it-works or query parameter ?poll=id
     const pathname = window.location.pathname;
-    if (pathname.startsWith('/poll/')) {
+    if (pathname === '/how-it-works') {
+      setCurrentTab('how-it-works');
+      return;
+    }
+    if (pathname.startsWith('/dashboard/poll/')) {
+      const id = pathname.split('/dashboard/poll/')[1];
+      if (id) {
+        setSelectedPollId(id);
+        setIsCreatorView(true);
+        setCurrentTab('poll');
+        return;
+      }
+    } else if (pathname.startsWith('/poll/')) {
       const id = pathname.split('/poll/')[1];
       if (id) {
         setSelectedPollId(id);
+        setIsCreatorView(false);
         setCurrentTab('poll');
         return;
       }
@@ -29,37 +73,53 @@ function PulseVoteApp() {
     const pollParam = params.get('poll');
     if (pollParam) {
       setSelectedPollId(pollParam);
+      setIsCreatorView(false);
       setCurrentTab('poll');
     }
   }, []);
 
-  const handleSelectPoll = (pollId) => {
+  const handleSelectPoll = (pollId, isCreator = false) => {
     setSelectedPollId(pollId);
+    setIsCreatorView(isCreator);
     setCurrentTab('poll');
-    window.history.pushState({}, '', `/poll/${pollId}`);
+    const path = isCreator ? `/dashboard/poll/${pollId}` : `/poll/${pollId}`;
+    window.history.pushState({}, '', path);
   };
 
   const handleBackToHome = () => {
     setSelectedPollId(null);
+    setIsCreatorView(false);
     setCurrentTab('home');
     window.history.pushState({}, '', '/');
   };
 
   const renderContent = () => {
     switch (currentTab) {
+      case 'how-it-works':
+        return (
+          <HowItWorksPage
+            onNavigate={(tab) => setCurrentTab(tab)}
+          />
+        );
       case 'poll':
-        return <Poll pollId={selectedPollId} onBack={handleBackToHome} />;
+        return (
+          <Poll
+            pollId={selectedPollId}
+            isCreatorView={isCreatorView}
+            onBack={handleBackToHome}
+          />
+        );
       case 'create':
         return (
           <CreatePoll
-            onCreated={(newPollId) => handleSelectPoll(newPollId)}
+            onCreated={(newPollId) => handleSelectPoll(newPollId, true)}
             onNavigate={(tab) => setCurrentTab(tab)}
           />
         );
       case 'dashboard':
         return (
           <Dashboard
-            onSelectPoll={handleSelectPoll}
+            onSelectPoll={(pollId, isCreator) => handleSelectPoll(pollId, isCreator)}
             onNavigate={(tab) => setCurrentTab(tab)}
           />
         );
@@ -107,7 +167,7 @@ function PulseVoteApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <PulseVoteApp />
+      <PollNowApp />
     </AuthProvider>
   );
 }

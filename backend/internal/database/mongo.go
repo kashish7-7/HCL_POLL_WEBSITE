@@ -19,7 +19,7 @@ type MongoInstance struct {
 }
 
 func ConnectMongo(cfg *config.Config) (*MongoInstance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	clientOptions := options.Client().ApplyURI(cfg.MongoURI)
@@ -29,10 +29,10 @@ func ConnectMongo(cfg *config.Config) (*MongoInstance, error) {
 	}
 
 	if err := client.Ping(ctx, nil); err != nil {
-		log.Printf("Warning: MongoDB ping failed (%v). Ensure MongoDB instance is accessible.", err)
-	} else {
-		log.Println("Successfully connected to MongoDB Atlas / Instance.")
+		return nil, fmt.Errorf("MongoDB connection failed: %v", err)
 	}
+
+	log.Println("MongoDB connection successful.")
 
 	db := client.Database(cfg.DBName)
 	initIndexes(ctx, db)

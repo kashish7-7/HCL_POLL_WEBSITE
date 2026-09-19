@@ -6,11 +6,9 @@ export const Footer = () => {
     <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 py-12 px-4 sm:px-6 lg:px-8 text-sm">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
-            <BarChart3 className="w-4 h-4" />
-          </div>
+          <img src="/logo.svg" alt="PollNow Logo" className="w-8 h-8 rounded-lg shadow-xs" />
           <span className="font-extrabold text-lg tracking-tight text-white">
-            Pulse<span className="text-indigo-500">Vote</span>
+            Poll<span className="text-indigo-500">Now</span>
           </span>
         </div>
 
@@ -19,7 +17,7 @@ export const Footer = () => {
         </p>
 
         <p className="text-xs text-slate-500">
-          © 2026 PulseVote. All rights reserved.
+          © 2026 PollNow. All rights reserved.
         </p>
       </div>
     </footer>

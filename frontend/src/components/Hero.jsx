@@ -91,53 +91,55 @@ export const Hero = ({ onNavigate, onPollCreated }) => {
   };
 
   return (
-    <section className="bg-slate-50 py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 relative overflow-hidden">
+    <section className="bg-slate-50 pt-8 pb-14 lg:pt-12 lg:pb-20 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 relative overflow-hidden">
       {/* Background Decorative Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-indigo-500/5 blur-3xl rounded-full pointer-events-none" />
 
-      <div className="max-w-5xl mx-auto text-center relative z-10">
-        {/* Main Hero Headlines matching Sections #3 & #5 */}
-        <div className="max-w-3xl mx-auto mb-10">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-4">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Real-Time Live Polling Engine</span>
-          </span>
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          {/* Left Column: Headlines & CTAs */}
+          <div className="lg:col-span-6 text-center lg:text-left">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Real-Time Live Polling Engine</span>
+            </span>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight sm:leading-none mb-4">
-            Create polls. <br className="hidden sm:inline" />
-            <span className="text-indigo-600">Get answers instantly.</span>
-          </h1>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight lg:leading-[1.1] mb-5">
+              Create polls. <br className="hidden sm:inline" />
+              <span className="text-indigo-600">Get answers instantly.</span>
+            </h1>
 
-          <p className="text-lg sm:text-xl text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
-            Create a live poll, share it with your audience, and watch responses update in real time without refreshing.
-          </p>
+            <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8">
+              Create a live poll, share it with your audience, and watch responses update in real time without refreshing.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
-            <button
-              onClick={() => onNavigate(isAuthenticated ? 'create' : 'login')}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 group cursor-pointer"
-            >
-              <span>Create a Poll</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+              <button
+                onClick={() => onNavigate(isAuthenticated ? 'create' : 'login')}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                <span>Create a Poll</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+              </button>
 
-            <button
-              onClick={scrollToHowItWorks}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl border border-slate-300 hover:bg-white text-slate-700 font-semibold text-base transition cursor-pointer"
-            >
-              How It Works
-            </button>
+              <button
+                onClick={() => onNavigate('how-it-works')}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl border border-slate-300 hover:bg-white text-slate-700 font-semibold text-base transition cursor-pointer"
+              >
+                How It Works
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Interactive Poll Maker Card Component matching Section #3 */}
-        <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden text-left">
-          {/* Top Tabs Bar */}
-          <div className="grid grid-cols-4 bg-slate-100/80 border-b border-slate-200 text-center font-medium text-slate-600 text-sm">
-            <button
-              onClick={() => setActiveTab('poll')}
-              className={`py-3.5 transition border-b-2 cursor-pointer font-semibold ${
-                activeTab === 'poll'
+          {/* Right Column: Interactive Poll Maker Card Component */}
+          <div className="lg:col-span-6 w-full max-w-xl mx-auto lg:max-w-none">
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden text-left">
+              {/* Top Tabs Bar */}
+              <div className="grid grid-cols-4 bg-slate-100/80 border-b border-slate-200 text-center font-medium text-slate-600 text-sm">
+                <button
+                  onClick={() => setActiveTab('poll')}
+                  className={`py-3.5 transition border-b-2 cursor-pointer font-semibold ${
+                    activeTab === 'poll'
                   ? 'bg-white text-indigo-600 border-indigo-600 shadow-xs'
                   : 'hover:text-slate-900 border-transparent hover:bg-slate-200/50'
               }`}
@@ -378,6 +380,8 @@ export const Hero = ({ onNavigate, onPollCreated }) => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </div>
+  </div>
+</section>
+);
 };

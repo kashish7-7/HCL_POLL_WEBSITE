@@ -17,8 +17,8 @@ func SetupRouter(cfg *config.Config, authHandler *handlers.AuthHandler, pollHand
 
 	// CORS configuration
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowAllOrigins = true
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	corsConfig.AllowOrigins = []string{"http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", cfg.FrontendURL}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept"}
 	corsConfig.AllowCredentials = true
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	r.Use(cors.New(corsConfig))
@@ -27,35 +27,40 @@ func SetupRouter(cfg *config.Config, authHandler *handlers.AuthHandler, pollHand
 	authLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
 	voteLimiter := middleware.NewRateLimiter(30, 1*time.Minute)
 
+	healthHandler := func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":   "ok",
+			"service":  "pollnow",
+			"database": "connected",
+			"redis":    "connected",
+			"time":     time.Now().Format(time.RFC3339),
+		})
+	}
+
 	// Root Endpoint
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "PulseVote Go Backend API is active",
-			"health":  "/health",
+			"message": "PollNow Go Backend API is active",
+			"health":  "/api/health",
 			"status":  "online",
 		})
 	})
 
-	// Health Check
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "online",
-			"service": "PulseVote Go Backend API",
-			"time":    time.Now().Format(time.RFC3339),
-		})
-	})
+	// Health Check Endpoints
+	r.GET("/health", healthHandler)
 
 	// WebSocket Live Broadcast Stream
 	r.GET("/api/polls/:id/live", wsHub.ServeWS)
 
 	api := r.Group("/api")
 	{
+		api.GET("/health", healthHandler)
+
 		// Auth Routes
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", authLimiter.Middleware(), authHandler.Register)
 			auth.POST("/login", authLimiter.Middleware(), authHandler.Login)
-			auth.POST("/google", authLimiter.Middleware(), authHandler.GoogleAuth)
 			auth.GET("/me", middleware.AuthMiddleware(cfg), authHandler.GetMe)
 		}
 
@@ -72,6 +77,9 @@ func SetupRouter(cfg *config.Config, authHandler *handlers.AuthHandler, pollHand
 			{
 				protected.POST("", pollHandler.CreatePoll)
 				protected.GET("/my", pollHandler.GetMyPolls)
+				protected.GET("/:id/owner-results", pollHandler.GetOwnerPollResults)
+				protected.GET("/:id/results/export/csv", pollHandler.ExportCSV)
+				protected.GET("/:id/results/export/excel", pollHandler.ExportExcel)
 				protected.POST("/:id/close", pollHandler.ClosePoll)
 				protected.DELETE("/:id", pollHandler.DeletePoll)
 			}

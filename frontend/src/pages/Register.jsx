@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { GoogleLogin } from '@react-oauth/google';
 import { Mail, Lock, UserPlus, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
-  const { register, googleAuth } = useAuth();
+  const { register } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,42 +38,29 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    if (!credentialResponse.credential) return;
-    setLoading(true);
-    setError('');
-    try {
-      await googleAuth(credentialResponse.credential);
-      if (onRegisterSuccess) onRegisterSuccess();
-    } catch (err) {
-      setError(err.message || 'Google authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl p-8">
-        <div className="text-center mb-8">
-          <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 block mb-1">
+    <div className="py-8 sm:py-12 px-4 my-auto flex items-center justify-center bg-slate-50 min-h-[calc(100vh-8rem)]">
+      <div className="w-full max-w-[420px] bg-white border border-slate-200 rounded-2xl shadow-xl p-6 sm:p-8">
+        <div className="text-center mb-6">
+          <img src="/logo.svg" alt="PollNow" className="w-10 h-10 mx-auto mb-2.5 rounded-xl shadow-xs" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 block mb-0.5">
             CREATE YOUR ACCOUNT
           </span>
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Join PulseVote
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+            Join PollNow
           </h2>
         </div>
 
         {error && (
-          <div className="mb-6 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="mb-5 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-500" />
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Email
             </label>
             <div className="relative">
@@ -86,14 +72,14 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
+                className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -105,7 +91,7 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
+                className="w-full pl-9 pr-9 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
                 required
               />
               <button
@@ -119,7 +105,7 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Confirm Password
             </label>
             <div className="relative">
@@ -131,7 +117,7 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
+                className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
                 required
               />
             </div>
@@ -140,34 +126,14 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-sm cursor-pointer flex justify-center items-center gap-2"
+            className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md shadow-indigo-600/20 cursor-pointer flex justify-center items-center gap-2 mt-2"
           >
             <UserPlus className="w-4 h-4" />
             <span>{loading ? 'Creating account...' : 'Create Account'}</span>
           </button>
         </form>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-3 text-slate-400 font-semibold">OR</span>
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setError('Google Authentication Failed')}
-            theme="outline"
-            size="large"
-            width="100%"
-            text="signup_with"
-          />
-        </div>
-
-        <div className="mt-8 text-center text-xs text-slate-600">
+        <div className="mt-6 text-center text-xs text-slate-600 border-t border-slate-100 pt-4">
           <span>Already have an account? </span>
           <button
             onClick={onNavigateLogin}

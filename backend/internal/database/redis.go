@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -30,10 +31,10 @@ func ConnectRedis(cfg *config.Config) (*RedisInstance, error) {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		log.Printf("Warning: Redis ping failed (%v). Ensure Redis server is active.", err)
-	} else {
-		log.Println("Successfully connected to Redis instance.")
+		return nil, fmt.Errorf("Redis connection failed: %v", err)
 	}
+
+	log.Println("Redis connection successful.")
 
 	return &RedisInstance{
 		Client: client,

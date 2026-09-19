@@ -1,6 +1,97 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { LayoutDashboard, PlusCircle, ExternalLink, Copy, Check, Trash2, Power, AlertCircle } from 'lucide-react';
+import { useRealtimePoll } from '../hooks/useRealtimePoll';
+import { LayoutDashboard, PlusCircle, ExternalLink, Copy, Check, Trash2, Power, AlertCircle, BarChart3 } from 'lucide-react';
+
+const DashboardPollCard = ({ initialPoll, onSelectPoll, onClosePoll, onDeletePoll, onCopyLink, isCopied }) => {
+  const { pollResults } = useRealtimePoll(initialPoll.poll_id, true);
+  const currentPoll = pollResults || initialPoll;
+  const status = currentPoll.status || (currentPoll.is_active ? 'active' : 'closed');
+  const isScheduled = status === 'scheduled';
+  const isActive = status === 'active' || (currentPoll.is_active && !isScheduled);
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex-1 space-y-1">
+        <div className="flex items-center gap-2">
+          {isScheduled ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+              Scheduled
+            </span>
+          ) : isActive ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              Closed
+            </span>
+          )}
+          <span className="text-xs text-slate-500 font-mono">
+            ID: {currentPoll.poll_id || currentPoll.id}
+          </span>
+        </div>
+
+        <h3 
+          onClick={() => onSelectPoll(initialPoll.poll_id, true)}
+          className="font-bold text-xl text-slate-900 hover:text-indigo-600 cursor-pointer transition flex items-center gap-2"
+        >
+          {currentPoll.question}
+          <ExternalLink className="w-4 h-4 text-slate-400" />
+        </h3>
+
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <span>Total votes cast: <strong className="text-slate-800 font-semibold">{currentPoll.total_votes || 0}</strong> • {currentPoll.options?.length || 0} Options</span>
+          {currentPoll.start_at && (
+            <span className="text-indigo-600 font-medium">Starts: {new Date(currentPoll.start_at).toLocaleString()}</span>
+          )}
+          {currentPoll.end_at && (
+            <span className="text-rose-600 font-medium">Ends: {new Date(currentPoll.end_at).toLocaleString()}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <button
+          onClick={() => onSelectPoll(initialPoll.poll_id, true)}
+          className="px-3.5 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+          <span>View Results</span>
+        </button>
+
+        <button
+          onClick={() => onCopyLink(initialPoll.poll_id)}
+          className="px-3.5 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+        >
+          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{isCopied ? 'Copied' : 'Copy Link'}</span>
+        </button>
+
+        {currentPoll.is_active && (
+          <button
+            onClick={() => onClosePoll(initialPoll.poll_id)}
+            className="px-3.5 py-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+            title="Close Poll"
+          >
+            <Power className="w-3.5 h-3.5" />
+            <span>Close</span>
+          </button>
+        )}
+
+        <button
+          onClick={() => onDeletePoll(initialPoll.poll_id)}
+          className="p-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 transition cursor-pointer"
+          title="Delete Poll"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const Dashboard = ({ onSelectPoll, onNavigate }) => {
   const [myPolls, setMyPolls] = useState([]);
@@ -99,77 +190,15 @@ export const Dashboard = ({ onSelectPoll, onNavigate }) => {
       ) : (
         <div className="space-y-4">
           {myPolls.map((poll) => (
-            <div 
+            <DashboardPollCard
               key={poll.poll_id}
-              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-            >
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  {poll.is_active ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                      Closed
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-500 font-mono">
-                    ID: {poll.poll_id}
-                  </span>
-                </div>
-
-                <h3 
-                  onClick={() => onSelectPoll(poll.poll_id)}
-                  className="font-bold text-xl text-slate-900 hover:text-indigo-600 cursor-pointer transition flex items-center gap-2"
-                >
-                  {poll.question}
-                  <ExternalLink className="w-4 h-4 text-slate-400" />
-                </h3>
-
-                <p className="text-xs text-slate-500">
-                  Total votes cast: <strong className="text-slate-800 font-semibold">{poll.total_votes || 0}</strong> • {poll.options?.length || 0} Options
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                <button
-                  onClick={() => onSelectPoll(poll.poll_id)}
-                  className="px-3.5 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>View</span>
-                </button>
-
-                <button
-                  onClick={() => copyLink(poll.poll_id)}
-                  className="px-3.5 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  {copiedId === poll.poll_id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedId === poll.poll_id ? 'Copied' : 'Copy Link'}</span>
-                </button>
-
-                {poll.is_active && (
-                  <button
-                    onClick={() => handleClosePoll(poll.poll_id)}
-                    className="px-3.5 py-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
-                    title="Close Poll"
-                  >
-                    <Power className="w-3.5 h-3.5" />
-                    <span>Close</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => handleDeletePoll(poll.poll_id)}
-                  className="p-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 transition cursor-pointer"
-                  title="Delete Poll"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+              initialPoll={poll}
+              onSelectPoll={onSelectPoll}
+              onClosePoll={handleClosePoll}
+              onDeletePoll={handleDeletePoll}
+              onCopyLink={copyLink}
+              isCopied={copiedId === poll.poll_id}
+            />
           ))}
         </div>
       )}

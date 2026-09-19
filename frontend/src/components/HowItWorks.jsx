@@ -34,14 +34,14 @@ export const HowItWorks = () => {
   ];
 
   return (
-    <section id="how-it-works" className="py-20 bg-white border-b border-slate-200/80">
+    <section id="how-it-works" className="py-24 bg-white border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-2 block">
             HOW IT WORKS
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            How PulseVote Works
+            How PollNow Works
           </h2>
           <p className="mt-3 text-base text-slate-600">
             Create, share, vote, and watch live results in 4 simple steps.

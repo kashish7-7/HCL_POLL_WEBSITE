@@ -1,7 +1,7 @@
-# 🗞️ THE GAZETTE POLLETIN (Live Realtime Polling Tool)
+# 📊 PollNow (Live Realtime Polling Tool)
 
 > **HCL GUVI Developer Internship Task Submission**  
-> A full-stack, real-time live polling application featuring an authentic **19th-Century Old Newspaper Aesthetic**, **live mechanical rolling digit tickers**, and **Web Audio telegraph click sound effects**.
+> A full-stack, real-time live polling application featuring instant live updates with Redis & WebSockets, MongoDB persistence, and Google OAuth 2.0 authentication.
 
 ---
 

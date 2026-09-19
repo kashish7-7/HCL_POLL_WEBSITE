@@ -1,6 +1,5 @@
 import React from 'react';
 import { Hero } from '../components/Hero';
-import { HowItWorks } from '../components/HowItWorks';
 import { FeatureSection } from '../components/FeatureSection';
 import { useAuth } from '../context/AuthContext';
 import { PlusCircle, ArrowRight } from 'lucide-react';
@@ -8,16 +7,10 @@ import { PlusCircle, ArrowRight } from 'lucide-react';
 export const Home = ({ onNavigate }) => {
   const { isAuthenticated } = useAuth();
 
-  const handleHowItWorksScroll = () => {
-    const el = document.getElementById('how-it-works');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <main>
       <Hero onNavigate={onNavigate} />
-      <HowItWorks />
-      <FeatureSection onSeeHowItWorks={handleHowItWorksScroll} />
+      <FeatureSection onSeeHowItWorks={() => onNavigate('how-it-works')} />
 
       {/* Simple CTA Section */}
       <section className="py-20 bg-indigo-600 text-white text-center px-4">

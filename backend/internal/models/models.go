@@ -10,9 +10,8 @@ type User struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Email        string             `bson:"email" json:"email"`
 	PasswordHash string             `bson:"password_hash,omitempty" json:"-"`
-	GoogleID     string             `bson:"google_id,omitempty" json:"google_id,omitempty"`
 	Username     string             `bson:"username" json:"username"`
-	AuthProvider string             `bson:"auth_provider" json:"auth_provider"` // "email" or "google"
+	AuthProvider string             `bson:"auth_provider" json:"auth_provider"` // "email"
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
 }
 
@@ -28,6 +27,8 @@ type Poll struct {
 	Question  string             `bson:"question" json:"question"`
 	Options   []Option           `bson:"options" json:"options"`
 	IsActive  bool               `bson:"is_active" json:"is_active"`
+	StartAt   *time.Time         `bson:"start_at,omitempty" json:"start_at,omitempty"`
+	EndAt     *time.Time         `bson:"end_at,omitempty" json:"end_at,omitempty"`
 	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 }
 
@@ -52,13 +53,11 @@ type LoginInput struct {
 	Password string `json:"password" binding:"required"`
 }
 
-type GoogleAuthInput struct {
-	Credential string `json:"credential" binding:"required"`
-}
-
 type CreatePollInput struct {
-	Question string   `json:"question" binding:"required,min=5,max=300"`
-	Options  []string `json:"options" binding:"required,min=2,max=10,dive,required,min=1,max=150"`
+	Question string     `json:"question" binding:"required,min=5,max=300"`
+	Options  []string   `json:"options" binding:"required,min=2,max=10,dive,required,min=1,max=150"`
+	StartAt  *time.Time `json:"start_at,omitempty"`
+	EndAt    *time.Time `json:"end_at,omitempty"`
 }
 
 type VoteInput struct {
@@ -74,12 +73,15 @@ type OptionResult struct {
 }
 
 type PollResultPayload struct {
-	PollID     string         `json:"poll_id"`
-	Question   string         `json:"question"`
-	IsActive   bool           `json:"is_active"`
-	TotalVotes int64          `json:"total_votes"`
+	PollID     string           `json:"poll_id"`
+	Question   string           `json:"question"`
+	IsActive   bool             `json:"is_active"`
+	Status     string           `json:"status"` // "scheduled", "active", "closed"
+	StartAt    *time.Time       `json:"start_at,omitempty"`
+	EndAt      *time.Time       `json:"end_at,omitempty"`
+	TotalVotes int64            `json:"total_votes"`
 	Counts     map[string]int64 `json:"counts"`
-	Options    []OptionResult `json:"options"`
+	Options    []OptionResult   `json:"options"`
 }
 
 type RealtimeBroadcastEvent struct {

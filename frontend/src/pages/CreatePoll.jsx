@@ -9,6 +9,9 @@ export const CreatePoll = ({ onCreated, onNavigate }) => {
   const [error, setError] = useState('');
   const [createdPoll, setCreatedPoll] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [startAt, setStartAt] = useState('');
+  const [endAt, setEndAt] = useState('');
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...options];
@@ -46,12 +49,27 @@ export const CreatePoll = ({ onCreated, onNavigate }) => {
       return;
     }
 
-    try {
-      const res = await api.createPoll({
-        question: question.trim(),
-        options: cleanOptions,
-      });
+    const payload = {
+      question: question.trim(),
+      options: cleanOptions,
+    };
 
+    if (isScheduled) {
+      if (startAt) {
+        payload.start_at = new Date(startAt).toISOString();
+      }
+      if (endAt) {
+        payload.end_at = new Date(endAt).toISOString();
+      }
+      if (startAt && endAt && new Date(startAt) >= new Date(endAt)) {
+        setError('End date & time must be after Start date & time');
+        setLoading(false);
+        return;
+      }
+    }
+
+    try {
+      const res = await api.createPoll(payload);
       setCreatedPoll(res.poll);
     } catch (err) {
       setError(err.message || 'Failed to create poll');
@@ -74,7 +92,7 @@ export const CreatePoll = ({ onCreated, onNavigate }) => {
     const pollURL = getPollURL(createdPoll.id);
 
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
+      <div className="py-6 sm:py-10 px-4 my-auto flex items-center justify-center bg-slate-50 min-h-[calc(100vh-8rem)]">
         <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-xl p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8" />
@@ -130,7 +148,7 @@ export const CreatePoll = ({ onCreated, onNavigate }) => {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
+    <div className="py-6 sm:py-10 px-4 my-auto flex items-center justify-center bg-slate-50 min-h-[calc(100vh-8rem)]">
       <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-xl p-8">
         <div className="border-b border-slate-200 pb-4 mb-6">
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
@@ -210,6 +228,54 @@ export const CreatePoll = ({ onCreated, onNavigate }) => {
                 <Plus className="w-4 h-4" />
                 <span>Add Option</span>
               </button>
+            )}
+          </div>
+
+          {/* Scheduling Section */}
+          <div className="pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-semibold text-slate-800 block">
+                  Schedule Poll (Optional)
+                </label>
+                <p className="text-xs text-slate-500">
+                  Set automatic start and end times for voting
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={isScheduled}
+                onChange={(e) => setIsScheduled(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+              />
+            </div>
+
+            {isScheduled && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Start Date & Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={startAt}
+                    onChange={(e) => setStartAt(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    End Date & Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={endAt}
+                    onChange={(e) => setEndAt(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+              </div>
             )}
           </div>
 
