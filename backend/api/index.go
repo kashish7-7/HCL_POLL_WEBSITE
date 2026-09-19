@@ -29,17 +29,16 @@ func initialize() {
 	log.Printf("[VERCEL] Connecting to MongoDB... (Target: %s)", cfg.GetMaskedMongoURI())
 	mongoInst, err := database.ConnectMongo(cfg)
 	if err != nil {
-		log.Printf("[VERCEL][ERROR] MongoDB Connection Failed: %v", err)
-		initErr = err
-		return
+		log.Printf("[VERCEL][WARN] MongoDB Connection Warning: %v", err)
+	} else {
+		log.Println("[VERCEL] MongoDB connected successfully.")
 	}
-	log.Println("[VERCEL] MongoDB connected successfully.")
 
 	// 2. Connect Redis
 	log.Printf("[VERCEL] Connecting to Redis... (Target: %s)", cfg.RedisURI)
 	redisInst, err := database.ConnectRedis(cfg)
 	if err != nil {
-		log.Printf("[VERCEL][WARN] Redis Connection Failed: %v", err)
+		log.Printf("[VERCEL][WARN] Redis Connection Warning: %v", err)
 	} else {
 		log.Println("[VERCEL] Redis connected successfully.")
 	}
@@ -64,8 +63,8 @@ func initialize() {
 func Handler(w http.ResponseWriter, r *http.Request) {
 	once.Do(initialize)
 
-	if initErr != nil {
-		http.Error(w, "Database Connection Error: "+initErr.Error(), http.StatusInternalServerError)
+	if app == nil {
+		http.Error(w, "Server Initialization Error", http.StatusInternalServerError)
 		return
 	}
 
