@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"backend/internal/database"
-	"backend/internal/models"
+	"backend/pkg/database"
+	"backend/pkg/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

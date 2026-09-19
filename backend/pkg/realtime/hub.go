@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"backend/internal/database"
+	"backend/pkg/database"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"

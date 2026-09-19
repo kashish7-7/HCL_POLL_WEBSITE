@@ -3,10 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"backend/internal/config"
-	"backend/internal/middleware"
-	"backend/internal/models"
-	"backend/internal/repository"
+	"backend/pkg/config"
+	"backend/pkg/middleware"
+	"backend/pkg/models"
+	"backend/pkg/repository"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"

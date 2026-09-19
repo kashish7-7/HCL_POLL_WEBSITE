@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"html"
 
-	"backend/internal/models"
+	"backend/pkg/models"
 )
 
 func GenerateExcel(question string, options []models.OptionResult, totalVotes int64) ([]byte, error) {

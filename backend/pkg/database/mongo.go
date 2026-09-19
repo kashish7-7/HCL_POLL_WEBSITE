@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"backend/internal/config"
+	"backend/pkg/config"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

@@ -14,3 +14,5 @@ backend/*.exe
 # IDE & Editors
 .vscode/
 .idea/
+
+.vercel

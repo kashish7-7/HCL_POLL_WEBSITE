@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"backend/internal/config"
+	"backend/pkg/config"
 
 	"github.com/redis/go-redis/v9"
 )

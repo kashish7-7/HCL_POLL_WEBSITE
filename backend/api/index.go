@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"sync"
 
-	"backend/internal/config"
-	"backend/internal/database"
-	"backend/internal/handlers"
-	"backend/internal/realtime"
-	"backend/internal/repository"
+	"backend/pkg/config"
+	"backend/pkg/database"
+	"backend/pkg/handlers"
+	"backend/pkg/realtime"
+	"backend/pkg/repository"
 	"backend/routes"
 )
 

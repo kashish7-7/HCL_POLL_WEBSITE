@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"backend/internal/export"
-	"backend/internal/models"
-	"backend/internal/realtime"
-	"backend/internal/repository"
+	"backend/pkg/export"
+	"backend/pkg/models"
+	"backend/pkg/realtime"
+	"backend/pkg/repository"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"

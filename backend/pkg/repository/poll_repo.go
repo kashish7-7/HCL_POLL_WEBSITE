@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	"backend/internal/database"
-	"backend/internal/models"
+	"backend/pkg/database"
+	"backend/pkg/models"
 
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"

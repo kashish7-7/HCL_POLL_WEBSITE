@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	"backend/internal/config"
-	"backend/internal/handlers"
-	"backend/internal/middleware"
-	"backend/internal/realtime"
+	"backend/pkg/config"
+	"backend/pkg/handlers"
+	"backend/pkg/middleware"
+	"backend/pkg/realtime"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
