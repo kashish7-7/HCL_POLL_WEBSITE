@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"strings"
 	"time"
 
 	"backend/internal/config"
@@ -17,7 +18,18 @@ func SetupRouter(cfg *config.Config, authHandler *handlers.AuthHandler, pollHand
 
 	// CORS configuration
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", cfg.FrontendURL}
+	corsConfig.AllowOriginFunc = func(origin string) bool {
+		if origin == "" {
+			return true
+		}
+		if origin == cfg.FrontendURL || origin == "http://localhost:5173" || origin == "http://localhost:3000" || origin == "http://127.0.0.1:5173" {
+			return true
+		}
+		if strings.HasSuffix(origin, ".vercel.app") {
+			return true
+		}
+		return false
+	}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept"}
 	corsConfig.AllowCredentials = true
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}

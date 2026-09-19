@@ -1,4 +1,14 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL !== undefined) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return ''; // Relative path for same-origin production deployment
+  }
+  return 'http://localhost:8080';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 async function fetchAPI(endpoint, options = {}) {
   const token = localStorage.getItem('pollnow_token') || localStorage.getItem('pulsevote_token');
@@ -93,7 +103,11 @@ export const api = {
 };
 
 export const getWebSocketURL = (pollId) => {
+  if (import.meta.env.VITE_WS_URL) {
+    const wsBase = import.meta.env.VITE_WS_URL.replace(/\/$/, '');
+    return `${wsBase}/api/polls/${pollId}/live`;
+  }
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = API_BASE_URL.replace(/^https?:\/\//, '');
+  let host = API_BASE_URL ? API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '') : window.location.host;
   return `${wsProtocol}//${host}/api/polls/${pollId}/live`;
 };

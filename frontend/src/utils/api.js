@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 async function fetchAPI(endpoint, options = {}) {
   const token = localStorage.getItem('gazette_token');
@@ -19,7 +19,7 @@ async function fetchAPI(endpoint, options = {}) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.error || 'An unexpected error occurred in the Gazette printing room');
+    throw new Error(data.error || 'An unexpected error occurred');
   }
 
   return data;
@@ -42,6 +42,6 @@ export const api = {
 
 export const getWebSocketURL = (pollId) => {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  let host = API_BASE_URL.replace(/^https?:\/\//, '');
+  let host = API_BASE_URL ? API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '') : window.location.host;
   return `${wsProtocol}//${host}/ws/polls/${pollId}`;
 };
