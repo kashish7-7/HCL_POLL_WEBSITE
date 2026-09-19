@@ -19,7 +19,7 @@ type MongoInstance struct {
 }
 
 func ConnectMongo(cfg *config.Config) (*MongoInstance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	clientOptions := options.Client().ApplyURI(cfg.MongoURI)
