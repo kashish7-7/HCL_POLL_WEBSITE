@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"time"
@@ -23,6 +24,10 @@ func ConnectMongo(cfg *config.Config) (*MongoInstance, error) {
 	defer cancel()
 
 	clientOptions := options.Client().ApplyURI(cfg.MongoURI)
+	clientOptions.SetTLSConfig(&tls.Config{
+		InsecureSkipVerify: true,
+	})
+
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Mongo client: %w", err)
