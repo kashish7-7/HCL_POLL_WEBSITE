@@ -2,39 +2,37 @@ package config
 
 import (
 	"os"
+
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port        string
-	MongoURI    string
-	DBName      string
-	RedisURI    string
-	RedisPass   string
-	JWTSecret   string
-	Environment string
+	Port               string
+	MongoURI           string
+	DBName             string
+	RedisURI           string
+	RedisPass          string
+	JWTSecret          string
+	GoogleClientID     string
+	GoogleClientSecret string
+	FrontendURL        string
+	Environment        string
 }
 
 func LoadConfig() *Config {
-	// Load .env file if available
 	_ = godotenv.Load()
 
-	port := getEnv("PORT", "8080")
-	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
-	dbName := getEnv("DB_NAME", "gazette_polletin")
-	redisURI := getEnv("REDIS_URI", "localhost:6379")
-	redisPass := getEnv("REDIS_PASSWORD", "")
-	jwtSecret := getEnv("JWT_SECRET", "vintage_gazette_secret_key_1882_hcl_guvi")
-	env := getEnv("ENV", "development")
-
 	return &Config{
-		Port:        port,
-		MongoURI:    mongoURI,
-		DBName:      dbName,
-		RedisURI:    redisURI,
-		RedisPass:   redisPass,
-		JWTSecret:   jwtSecret,
-		Environment: env,
+		Port:               getEnv("PORT", "8080"),
+		MongoURI:           getEnv("MONGODB_URI", "mongodb://localhost:27017"),
+		DBName:             getEnv("MONGODB_DATABASE", "pulsevote"),
+		RedisURI:           getEnv("REDIS_URL", "localhost:6379"),
+		RedisPass:          getEnv("REDIS_PASSWORD", ""),
+		JWTSecret:          getEnv("JWT_SECRET", "pulsevote_jwt_super_secret_key_2026"),
+		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:5173"),
+		Environment:        getEnv("ENV", "development"),
 	}
 }
 

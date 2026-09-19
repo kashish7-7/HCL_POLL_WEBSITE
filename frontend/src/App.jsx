@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
-import { Header } from './components/Header';
+import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
-import { PollView } from './pages/PollView';
-import { CreatePoll } from './pages/CreatePoll';
-import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { CreatePoll } from './pages/CreatePoll';
+import { Dashboard } from './pages/Dashboard';
+import { Poll } from './pages/Poll';
 
-function GazetteApp() {
+function PulseVoteApp() {
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedPollId, setSelectedPollId] = useState(null);
 
-  // Check URL parameters for shareable links (?poll=ID)
   useEffect(() => {
+    // Check path for /poll/:id or query parameter ?poll=id
+    const pathname = window.location.pathname;
+    if (pathname.startsWith('/poll/')) {
+      const id = pathname.split('/poll/')[1];
+      if (id) {
+        setSelectedPollId(id);
+        setCurrentTab('poll');
+        return;
+      }
+    }
+
     const params = new URLSearchParams(window.location.search);
     const pollParam = params.get('poll');
     if (pollParam) {
@@ -25,24 +36,24 @@ function GazetteApp() {
   const handleSelectPoll = (pollId) => {
     setSelectedPollId(pollId);
     setCurrentTab('poll');
-    window.history.pushState({}, '', `?poll=${pollId}`);
+    window.history.pushState({}, '', `/poll/${pollId}`);
   };
 
   const handleBackToHome = () => {
     setSelectedPollId(null);
     setCurrentTab('home');
-    window.history.pushState({}, '', window.location.pathname);
+    window.history.pushState({}, '', '/');
   };
 
   const renderContent = () => {
     switch (currentTab) {
       case 'poll':
-        return <PollView pollId={selectedPollId} onBack={handleBackToHome} />;
+        return <Poll pollId={selectedPollId} onBack={handleBackToHome} />;
       case 'create':
         return (
           <CreatePoll
             onCreated={(newPollId) => handleSelectPoll(newPollId)}
-            onCancel={handleBackToHome}
+            onNavigate={(tab) => setCurrentTab(tab)}
           />
         );
       case 'dashboard':
@@ -70,7 +81,6 @@ function GazetteApp() {
       default:
         return (
           <Home
-            onSelectPoll={handleSelectPoll}
             onNavigate={(tab) => setCurrentTab(tab)}
           />
         );
@@ -78,29 +88,18 @@ function GazetteApp() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between">
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50">
       <div>
-        <Header currentTab={currentTab} setTab={(tab) => {
-          if (tab === 'home') handleBackToHome();
-          else setCurrentTab(tab);
-        }} />
+        <Navbar
+          currentTab={currentTab}
+          setTab={(tab) => {
+            if (tab === 'home') handleBackToHome();
+            else setCurrentTab(tab);
+          }}
+        />
         {renderContent()}
       </div>
-
-      {/* Newspaper Footer */}
-      <footer className="mt-12 border-t-4 border-double border-[#2c251e] bg-[#eedfc5] py-6 px-4 font-serif text-center text-xs text-[#4a423a]">
-        <div className="max-w-5xl mx-auto space-y-2">
-          <p className="font-bold uppercase tracking-widest text-[#1f1b18]">
-            THE GAZETTE POLLETIN • HCL GUVI DEVELOPER INTERNSHIP TASK
-          </p>
-          <p className="italic">
-            Engineered with React, Go (Gin), MongoDB & Redis Pub/Sub Telegraph Broadcast.
-          </p>
-          <p className="text-[10px] text-[#8b5e34]">
-            © 1882 - 2026 Gazette Publishing House. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
@@ -108,7 +107,7 @@ function GazetteApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <GazetteApp />
+      <PulseVoteApp />
     </AuthProvider>
   );
 }

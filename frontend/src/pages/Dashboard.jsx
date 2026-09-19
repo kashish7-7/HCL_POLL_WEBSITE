@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../utils/api';
-import { soundFx } from '../utils/sound';
-import { LayoutDashboard, PenTool, Trash2, Share2, Check, Radio, ExternalLink } from 'lucide-react';
+import { api } from '../services/api';
+import { LayoutDashboard, PlusCircle, ExternalLink, Copy, Check, Trash2, Power, AlertCircle } from 'lucide-react';
 
 export const Dashboard = ({ onSelectPoll, onNavigate }) => {
   const [myPolls, setMyPolls] = useState([]);
@@ -16,7 +15,7 @@ export const Dashboard = ({ onSelectPoll, onNavigate }) => {
       const res = await api.getMyPolls();
       setMyPolls(res.polls || []);
     } catch (err) {
-      setError(err.message || 'Failed to fetch your published polls');
+      setError(err.message || 'Failed to load your polls');
     } finally {
       setLoading(false);
     }
@@ -26,120 +25,154 @@ export const Dashboard = ({ onSelectPoll, onNavigate }) => {
     fetchMyPolls();
   }, []);
 
-  const handleDelete = async (pollId) => {
-    if (!window.confirm('Are you sure you wish to retract and delete this poll dispatch?')) return;
-
+  const handleClosePoll = async (pollId) => {
+    if (!window.confirm('Are you sure you want to close this poll? Readers will no longer be able to cast votes.')) return;
     try {
-      soundFx.playMechanicalClick();
+      await api.closePoll(pollId);
+      setMyPolls(myPolls.map(p => p.poll_id === pollId ? { ...p, is_active: false } : p));
+    } catch (err) {
+      alert('Failed to close poll: ' + err.message);
+    }
+  };
+
+  const handleDeletePoll = async (pollId) => {
+    if (!window.confirm('Are you sure you want to delete this poll? This action cannot be undone.')) return;
+    try {
       await api.deletePoll(pollId);
-      setMyPolls(myPolls.filter(p => p.id !== pollId));
+      setMyPolls(myPolls.filter(p => p.poll_id !== pollId));
     } catch (err) {
       alert('Failed to delete poll: ' + err.message);
     }
   };
 
-  const copyShareLink = (pollId) => {
-    const url = `${window.location.origin}?poll=${pollId}`;
+  const copyLink = (pollId) => {
+    const url = `${window.location.origin}/poll/${pollId}`;
     navigator.clipboard.writeText(url);
     setCopiedId(pollId);
-    soundFx.playMechanicalClick();
     setTimeout(() => setCopiedId(null), 2500);
   };
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-6">
-      <div className="newspaper-container border-2 border-[#2c251e] p-6 mb-8">
-        <div className="flex flex-wrap justify-between items-center border-b-4 border-double border-[#2c251e] pb-4 mb-6">
-          <div>
-            <span className="text-xs font-serif uppercase tracking-widest text-[#8b5e34] font-bold">
-              ★ EDITOR'S DASHBOARD ★
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-black uppercase text-[#1f1b18]">
-              MY PUBLISHED POLL DISPATCHES
-            </h2>
-          </div>
-
-          <button
-            onClick={() => onNavigate('create')}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#2c251e] bg-[#1f1b18] text-[#f6ebd6] font-serif uppercase font-bold text-xs hover:bg-[#3d342c] cursor-pointer"
-          >
-            <PenTool className="w-4 h-4 text-amber-500" />
-            Publish New Poll
-          </button>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-6 mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <LayoutDashboard className="w-8 h-8 text-indigo-600" />
+            <span>My Polls Dashboard</span>
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Manage your active polls, monitor live results, and share link dispatches.
+          </p>
         </div>
 
-        {loading ? (
-          <div className="p-12 text-center font-serif italic text-[#4a423a]">
-            <Radio className="w-8 h-8 animate-pulse mx-auto mb-2 text-amber-800" />
-            Opening Editor's archive...
-          </div>
-        ) : error ? (
-          <div className="p-4 bg-red-100 border-2 border-red-800 text-red-900 font-serif text-xs">
-            {error}
-          </div>
-        ) : myPolls.length === 0 ? (
-          <div className="p-8 text-center border-2 border-dashed border-[#594939] bg-[#f8f1e3]">
-            <p className="font-serif text-base italic text-[#4a423a] mb-4">
-              You have not published any polls yet.
-            </p>
-            <button
-              onClick={() => onNavigate('create')}
-              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-[#2c251e] bg-[#1f1b18] text-[#f6ebd6] font-serif uppercase font-bold text-xs"
-            >
-              <PenTool className="w-4 h-4 text-amber-500" />
-              Publish Your First Dispatch
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4 font-serif">
-            {myPolls.map((poll) => (
-              <div 
-                key={poll.id} 
-                className="border-2 border-[#2c251e] p-4 bg-[#fdf8ee] hover:bg-[#f8f1e3] transition flex flex-wrap justify-between items-center gap-4"
-              >
-                <div className="flex-1 min-w-[250px]">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] uppercase font-bold bg-[#1f1b18] text-[#f6ebd6] px-1.5 py-0.5">
-                      {poll.category || 'General'}
-                    </span>
-                    <span className="text-xs italic text-[#4a423a]">
-                      Published {new Date(poll.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <h3 
-                    onClick={() => onSelectPoll(poll.id)}
-                    className="font-bold text-lg text-[#1f1b18] hover:underline cursor-pointer flex items-center gap-1.5"
-                  >
-                    {poll.title}
-                    <ExternalLink className="w-3.5 h-3.5 text-amber-800" />
-                  </h3>
-                  <p className="text-xs text-[#4a423a] mt-1">
-                    {poll.options?.length || 0} Options • Total Votes Recorded: <strong>{poll.total_votes || 0}</strong>
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => copyShareLink(poll.id)}
-                    className="flex items-center gap-1 text-xs font-bold uppercase px-3 py-1.5 border border-[#2c251e] bg-[#eedfc5] hover:bg-[#e4d4b8] cursor-pointer"
-                  >
-                    {copiedId === poll.id ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Share2 className="w-3.5 h-3.5" />}
-                    {copiedId === poll.id ? 'Copied Link' : 'Copy Link'}
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(poll.id)}
-                    className="p-1.5 border border-red-800 text-red-900 bg-red-100 hover:bg-red-200 cursor-pointer"
-                    title="Retract / Delete Poll"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={() => onNavigate('create')}
+          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md flex items-center gap-2 cursor-pointer"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Create New Poll</span>
+        </button>
       </div>
-    </main>
+
+      {loading ? (
+        <div className="py-20 text-center text-slate-500 font-medium">
+          Loading your dashboard polls...
+        </div>
+      ) : error ? (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-medium flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      ) : myPolls.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+          <p className="text-base text-slate-600 mb-6">
+            You haven't created any polls yet.
+          </p>
+          <button
+            onClick={() => onNavigate('create')}
+            className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md inline-flex items-center gap-2 cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Create Your First Poll</span>
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {myPolls.map((poll) => (
+            <div 
+              key={poll.poll_id}
+              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+            >
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  {poll.is_active ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                      Closed
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-500 font-mono">
+                    ID: {poll.poll_id}
+                  </span>
+                </div>
+
+                <h3 
+                  onClick={() => onSelectPoll(poll.poll_id)}
+                  className="font-bold text-xl text-slate-900 hover:text-indigo-600 cursor-pointer transition flex items-center gap-2"
+                >
+                  {poll.question}
+                  <ExternalLink className="w-4 h-4 text-slate-400" />
+                </h3>
+
+                <p className="text-xs text-slate-500">
+                  Total votes cast: <strong className="text-slate-800 font-semibold">{poll.total_votes || 0}</strong> • {poll.options?.length || 0} Options
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <button
+                  onClick={() => onSelectPoll(poll.poll_id)}
+                  className="px-3.5 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>View</span>
+                </button>
+
+                <button
+                  onClick={() => copyLink(poll.poll_id)}
+                  className="px-3.5 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  {copiedId === poll.poll_id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedId === poll.poll_id ? 'Copied' : 'Copy Link'}</span>
+                </button>
+
+                {poll.is_active && (
+                  <button
+                    onClick={() => handleClosePoll(poll.poll_id)}
+                    className="px-3.5 py-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                    title="Close Poll"
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    <span>Close</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleDeletePoll(poll.poll_id)}
+                  className="p-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 transition cursor-pointer"
+                  title="Delete Poll"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };

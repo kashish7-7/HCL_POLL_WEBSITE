@@ -17,7 +17,6 @@ type RedisInstance struct {
 func ConnectRedis(cfg *config.Config) (*RedisInstance, error) {
 	opts, err := redis.ParseURL(cfg.RedisURI)
 	if err != nil {
-		// Fallback to plain address if not a full URL
 		opts = &redis.Options{
 			Addr:     cfg.RedisURI,
 			Password: cfg.RedisPass,
@@ -33,7 +32,7 @@ func ConnectRedis(cfg *config.Config) (*RedisInstance, error) {
 	if err := client.Ping(ctx).Err(); err != nil {
 		log.Printf("Warning: Redis ping failed (%v). Ensure Redis server is active.", err)
 	} else {
-		log.Println("Successfully connected to Redis.")
+		log.Println("Successfully connected to Redis instance.")
 	}
 
 	return &RedisInstance{

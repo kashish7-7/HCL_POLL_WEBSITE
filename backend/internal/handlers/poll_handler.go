@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"net/http"
 
 	"backend/internal/models"
@@ -17,9 +15,7 @@ type PollHandler struct {
 }
 
 func NewPollHandler(repo *repository.PollRepository) *PollHandler {
-	return &PollHandler{
-		repo: repo,
-	}
+	return &PollHandler{repo: repo}
 }
 
 func (h *PollHandler) CreatePoll(c *gin.Context) {
@@ -35,20 +31,20 @@ func (h *PollHandler) CreatePoll(c *gin.Context) {
 		return
 	}
 
-	creatorID := userIDVal.(primitive.ObjectID)
-	creatorName := c.GetString("username")
-	if creatorName == "" {
-		creatorName = "Anonymous Editor"
+	ownerID := userIDVal.(primitive.ObjectID)
+	ownerName := c.GetString("username")
+	if ownerName == "" {
+		ownerName = c.GetString("userEmail")
 	}
 
-	poll, err := h.repo.CreatePoll(c.Request.Context(), input, creatorID, creatorName)
+	poll, err := h.repo.CreatePoll(c.Request.Context(), input, ownerID, ownerName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Poll published successfully to the Gazette!",
+		"message": "Poll created successfully!",
 		"poll":    poll,
 	})
 }
@@ -64,31 +60,15 @@ func (h *PollHandler) GetPollByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"poll": poll})
 }
 
-func (h *PollHandler) GetPublicPolls(c *gin.Context) {
-	polls, err := h.repo.GetPublicPolls(c.Request.Context(), 50)
+func (h *PollHandler) GetPollResults(c *gin.Context) {
+	pollID := c.Param("id")
+	results, err := h.repo.GetPollResults(c.Request.Context(), pollID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"polls": polls})
-}
-
-func (h *PollHandler) GetMyPolls(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	creatorID := userIDVal.(primitive.ObjectID)
-	polls, err := h.repo.GetUserPolls(c.Request.Context(), creatorID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"polls": polls})
+	c.JSON(http.StatusOK, gin.H{"results": results})
 }
 
 func (h *PollHandler) VotePoll(c *gin.Context) {
@@ -100,27 +80,53 @@ func (h *PollHandler) VotePoll(c *gin.Context) {
 		return
 	}
 
-	voterIP := c.ClientIP()
-	
-	// Check for voter cookie or generate temporary browser session identifier
-	voterIdentifier, err := c.Cookie("gazette_voter_id")
-	if err != nil || voterIdentifier == "" {
-		bytes := make([]byte, 16)
-		_, _ = rand.Read(bytes)
-		voterIdentifier = hex.EncodeToString(bytes)
-		c.SetCookie("gazette_voter_id", voterIdentifier, 3600*24*365, "/", "", false, false)
-	}
+	clientIP := c.ClientIP()
 
-	broadcastPayload, err := h.repo.CastVote(c.Request.Context(), pollID, input.OptionID, voterIP, voterIdentifier)
+	broadcast, err := h.repo.CastVote(c.Request.Context(), pollID, input.OptionID, input.VoterID, clientIP)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Your vote has been recorded by the Gazette!",
-		"payload": broadcastPayload,
+		"message": "Vote submitted successfully",
+		"payload": broadcast,
 	})
+}
+
+func (h *PollHandler) ClosePoll(c *gin.Context) {
+	pollID := c.Param("id")
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	ownerID := userIDVal.(primitive.ObjectID)
+	err := h.repo.ClosePoll(c.Request.Context(), pollID, ownerID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Poll closed successfully"})
+}
+
+func (h *PollHandler) GetMyPolls(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	ownerID := userIDVal.(primitive.ObjectID)
+	polls, err := h.repo.GetUserPolls(c.Request.Context(), ownerID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"polls": polls})
 }
 
 func (h *PollHandler) DeletePoll(c *gin.Context) {
@@ -131,8 +137,8 @@ func (h *PollHandler) DeletePoll(c *gin.Context) {
 		return
 	}
 
-	creatorID := userIDVal.(primitive.ObjectID)
-	err := h.repo.DeletePoll(c.Request.Context(), pollID, creatorID)
+	ownerID := userIDVal.(primitive.ObjectID)
+	err := h.repo.DeletePoll(c.Request.Context(), pollID, ownerID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { soundFx } from '../utils/sound';
-import { UserPlus, Key, Mail, User, AlertCircle } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { Mail, Lock, UserPlus, AlertCircle } from 'lucide-react';
 
 export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
-  const { register } = useAuth();
-  const [username, setUsername] = useState('');
+  const { register, googleAuth } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,25 +16,21 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
     setLoading(true);
     setError('');
 
-    if (username.length < 3) {
-      setError('Editor handle must be at least 3 characters');
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError('Passphrase must be at least 6 characters');
+      setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
 
     try {
-      soundFx.playMechanicalClick();
-      await register({ username, email, password });
-      soundFx.playFanfare();
-      if (onRegisterSuccess) {
-        onRegisterSuccess();
-      }
+      await register({ email, password, confirm_password: confirmPassword });
+      if (onRegisterSuccess) onRegisterSuccess();
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -42,94 +38,139 @@ export const Register = ({ onRegisterSuccess, onNavigateLogin }) => {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse.credential) return;
+    setLoading(true);
+    setError('');
+    try {
+      await googleAuth(credentialResponse.credential);
+      if (onRegisterSuccess) onRegisterSuccess();
+    } catch (err) {
+      setError(err.message || 'Google authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <main className="max-w-md mx-auto px-4 py-8">
-      <div className="newspaper-container border-2 border-[#2c251e] p-6 sm:p-8">
-        <div className="border-b-4 border-double border-[#2c251e] pb-4 mb-6 text-center">
-          <span className="text-xs font-serif uppercase tracking-widest text-[#8b5e34] font-bold">
-            ★ PRESS REGISTRATION ★
-          </span>
-          <h2 className="font-serif text-2xl font-black uppercase text-[#1f1b18] mt-1">
-            JOIN THE GAZETTE CORPS
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl p-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Create your PulseVote account
           </h2>
-          <p className="font-serif italic text-xs text-[#4a423a] mt-1">
-            Create an editor credentials profile to publish dispatches.
+          <p className="text-sm text-slate-500 mt-1">
+            Start creating instant real-time polls for free
           </p>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-3 mb-6 bg-red-100 border-l-4 border-red-800 text-red-900 font-serif text-xs font-semibold">
+          <div className="mb-6 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 font-serif">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase text-[#1f1b18] mb-1 flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-amber-800" />
-              Editor Handle / Full Name
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. Samuel Clemens"
-              className="w-full p-2.5 border-2 border-[#2c251e] bg-[#fdf8ee] text-[#1f1b18] text-sm focus:bg-[#f6ebd6] focus:outline-none"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase text-[#1f1b18] mb-1 flex items-center gap-1">
-              <Mail className="w-3.5 h-3.5 text-amber-800" />
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Email Address
             </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="editor@gazette.com"
-              className="w-full p-2.5 border-2 border-[#2c251e] bg-[#fdf8ee] text-[#1f1b18] text-sm focus:bg-[#f6ebd6] focus:outline-none"
-              required
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Mail className="w-4 h-4" />
+              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
+                required
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-[#1f1b18] mb-1 flex items-center gap-1">
-              <Key className="w-3.5 h-3.5 text-amber-800" />
-              Passphrase (Min. 6 characters)
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Password (Min 6 characters)
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full p-2.5 border-2 border-[#2c251e] bg-[#fdf8ee] text-[#1f1b18] text-sm focus:bg-[#f6ebd6] focus:outline-none"
-              required
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
+                required
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 border-2 border-[#2c251e] bg-[#1f1b18] text-[#f6ebd6] font-serif uppercase font-bold text-xs hover:bg-[#3d342c] cursor-pointer transition flex justify-center items-center gap-2 mt-4"
+            className="w-full py-3 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-sm cursor-pointer flex justify-center items-center gap-2"
           >
-            <UserPlus className="w-4 h-4 text-amber-500" />
-            {loading ? 'Registering...' : 'Complete Press Registration'}
+            <UserPlus className="w-4 h-4" />
+            <span>{loading ? 'Creating Account...' : 'Register Account'}</span>
           </button>
         </form>
 
-        <div className="mt-6 pt-4 border-t border-dashed border-[#594939] text-center font-serif text-xs">
-          <span className="text-[#4a423a] italic">Already registered as an Editor? </span>
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-3 text-slate-400 font-semibold">Or continue with</span>
+          </div>
+        </div>
+
+        {/* Google OAuth Component */}
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError('Google Authentication Failed')}
+            theme="outline"
+            size="large"
+            width="100%"
+            text="signup_with"
+          />
+        </div>
+
+        <div className="mt-8 text-center text-xs text-slate-600">
+          <span>Already have an account? </span>
           <button
             onClick={onNavigateLogin}
-            className="font-bold underline text-[#1f1b18] hover:text-amber-900 cursor-pointer ml-1 uppercase"
+            className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer ml-1"
           >
-            Sign In Here
+            Sign in here
           </button>
         </div>
       </div>
-    </main>
+    </div>
   );
 };

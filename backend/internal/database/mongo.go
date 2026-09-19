@@ -25,13 +25,13 @@ func ConnectMongo(cfg *config.Config) (*MongoInstance, error) {
 	clientOptions := options.Client().ApplyURI(cfg.MongoURI)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create mongo client: %w", err)
+		return nil, fmt.Errorf("failed to create Mongo client: %w", err)
 	}
 
 	if err := client.Ping(ctx, nil); err != nil {
-		log.Printf("Warning: MongoDB ping failed (%v). Backend will continue, but ensure MongoDB is running.", err)
+		log.Printf("Warning: MongoDB ping failed (%v). Ensure MongoDB instance is accessible.", err)
 	} else {
-		log.Println("Successfully connected to MongoDB.")
+		log.Println("Successfully connected to MongoDB Atlas / Instance.")
 	}
 
 	db := client.Database(cfg.DBName)
@@ -44,19 +44,25 @@ func ConnectMongo(cfg *config.Config) (*MongoInstance, error) {
 }
 
 func initIndexes(ctx context.Context, db *mongo.Database) {
-	// Create unique index for user email
 	usersColl := db.Collection("users")
 	_, _ = usersColl.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys:    bson.D{{Key: "email", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	})
 
-	// Create index for poll creation date & creator
 	pollsColl := db.Collection("polls")
 	_, _ = pollsColl.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys: bson.D{{Key: "creator_id", Value: 1}},
+		Keys: bson.D{{Key: "owner_id", Value: 1}},
 	})
 	_, _ = pollsColl.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "created_at", Value: -1}},
+	})
+
+	votesColl := db.Collection("votes")
+	_, _ = votesColl.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "poll_id", Value: 1},
+			{Key: "voter_identifier", Value: 1},
+		},
 	})
 }

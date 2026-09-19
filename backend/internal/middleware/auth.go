@@ -56,13 +56,13 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+				return nil, fmt.Errorf("unexpected signing algorithm: %v", t.Header["alg"])
 			}
 			return []byte(cfg.JWTSecret), nil
 		})
 
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired authorization token"})
 			c.Abort()
 			return
 		}

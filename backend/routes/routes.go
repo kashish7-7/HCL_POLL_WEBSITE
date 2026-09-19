@@ -1,0 +1,73 @@
+package routes
+
+import (
+	"time"
+
+	"backend/internal/config"
+	"backend/internal/handlers"
+	"backend/internal/middleware"
+	"backend/internal/realtime"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+)
+
+func SetupRouter(cfg *config.Config, authHandler *handlers.AuthHandler, pollHandler *handlers.PollHandler, wsHub *realtime.Hub) *gin.Engine {
+	r := gin.Default()
+
+	// CORS configuration
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	corsConfig.AllowCredentials = true
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	r.Use(cors.New(corsConfig))
+
+	// Rate limiters
+	authLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
+	voteLimiter := middleware.NewRateLimiter(30, 1*time.Minute)
+
+	// Health Check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "online",
+			"service": "PulseVote Go Backend API",
+			"time":    time.Now().Format(time.RFC3339),
+		})
+	})
+
+	// WebSocket Live Broadcast Stream
+	r.GET("/api/polls/:id/live", wsHub.ServeWS)
+
+	api := r.Group("/api")
+	{
+		// Auth Routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authLimiter.Middleware(), authHandler.Register)
+			auth.POST("/login", authLimiter.Middleware(), authHandler.Login)
+			auth.POST("/google", authLimiter.Middleware(), authHandler.GoogleAuth)
+			auth.GET("/me", middleware.AuthMiddleware(cfg), authHandler.GetMe)
+		}
+
+		// Poll Routes
+		polls := api.Group("/polls")
+		{
+			polls.GET("/:id", pollHandler.GetPollByID)
+			polls.GET("/:id/results", pollHandler.GetPollResults)
+			polls.POST("/:id/vote", voteLimiter.Middleware(), pollHandler.VotePoll)
+
+			// Protected Poll Routes
+			protected := polls.Group("")
+			protected.Use(middleware.AuthMiddleware(cfg))
+			{
+				protected.POST("", pollHandler.CreatePoll)
+				protected.GET("/my", pollHandler.GetMyPolls)
+				protected.POST("/:id/close", pollHandler.ClosePoll)
+				protected.DELETE("/:id", pollHandler.DeletePoll)
+			}
+		}
+	}
+
+	return r
+}
