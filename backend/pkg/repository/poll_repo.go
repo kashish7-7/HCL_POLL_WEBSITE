@@ -27,12 +27,16 @@ type PollRepository struct {
 }
 
 func NewPollRepository(mongoInst *database.MongoInstance, redisInst *database.RedisInstance) *PollRepository {
+	var db *mongo.Database
+	if mongoInst != nil {
+		db = mongoInst.DB
+	}
 	var rClient *redis.Client
 	if redisInst != nil {
 		rClient = redisInst.Client
 	}
 	return &PollRepository{
-		db:    mongoInst.DB,
+		db:    db,
 		redis: rClient,
 	}
 }

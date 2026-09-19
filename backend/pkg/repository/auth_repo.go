@@ -20,12 +20,19 @@ type AuthRepository struct {
 }
 
 func NewAuthRepository(mongoInst *database.MongoInstance) *AuthRepository {
+	var db *mongo.Database
+	if mongoInst != nil {
+		db = mongoInst.DB
+	}
 	return &AuthRepository{
-		db: mongoInst.DB,
+		db: db,
 	}
 }
 
 func (r *AuthRepository) CreateUser(ctx context.Context, input models.RegisterInput) (*models.User, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection unavailable")
+	}
 	if input.Password != input.ConfirmPassword {
 		return nil, errors.New("passwords do not match")
 	}
@@ -71,6 +78,9 @@ func (r *AuthRepository) CreateUser(ctx context.Context, input models.RegisterIn
 }
 
 func (r *AuthRepository) AuthenticateEmail(ctx context.Context, input models.LoginInput) (*models.User, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection unavailable")
+	}
 	usersColl := r.db.Collection("users")
 
 	var user models.User
@@ -94,6 +104,9 @@ func (r *AuthRepository) AuthenticateEmail(ctx context.Context, input models.Log
 }
 
 func (r *AuthRepository) GetUserByID(ctx context.Context, id primitive.ObjectID) (*models.User, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection unavailable")
+	}
 	usersColl := r.db.Collection("users")
 	var user models.User
 	err := usersColl.FindOne(ctx, bson.M{"_id": id}).Decode(&user)

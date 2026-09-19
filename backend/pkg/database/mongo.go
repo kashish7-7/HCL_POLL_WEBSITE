@@ -34,10 +34,10 @@ func ConnectMongo(cfg *config.Config) (*MongoInstance, error) {
 	}
 
 	if err := client.Ping(ctx, nil); err != nil {
-		return nil, fmt.Errorf("MongoDB connection failed: %v", err)
+		log.Printf("[MONGODB][WARN] MongoDB Ping warning: %v (Driver will retry connection on demand)", err)
+	} else {
+		log.Println("MongoDB connection successful.")
 	}
-
-	log.Println("MongoDB connection successful.")
 
 	db := client.Database(cfg.DBName)
 	initIndexes(ctx, db)
