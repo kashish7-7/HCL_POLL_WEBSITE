@@ -41,8 +41,11 @@ func LoadConfig() *Config {
 }
 
 func getEnv(key, fallback string) string {
-	if val, ok := os.LookupEnv(key); ok && val != "" {
-		return val
+	if val, ok := os.LookupEnv(key); ok {
+		trimmed := strings.TrimSpace(val)
+		if trimmed != "" {
+			return trimmed
+		}
 	}
 	return fallback
 }
