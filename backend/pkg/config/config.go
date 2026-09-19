@@ -42,7 +42,7 @@ func LoadConfig() *Config {
 
 func getEnv(key, fallback string) string {
 	if val, ok := os.LookupEnv(key); ok {
-		trimmed := strings.TrimSpace(val)
+		trimmed := strings.Trim(strings.TrimSpace(val), "\"'`")
 		if trimmed != "" {
 			return trimmed
 		}
