@@ -27,6 +27,15 @@ func SetupRouter(cfg *config.Config, authHandler *handlers.AuthHandler, pollHand
 	authLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
 	voteLimiter := middleware.NewRateLimiter(30, 1*time.Minute)
 
+	// Root Endpoint
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "PulseVote Go Backend API is active",
+			"health":  "/health",
+			"status":  "online",
+		})
+	})
+
 	// Health Check
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
